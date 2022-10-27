@@ -1,0 +1,5 @@
+# This file is used to ignore vulnerabilities detected by trivy that are false-positives.
+# Please follow the template below:
+
+# A short comment explaining why we want to ignore the CVE
+# CVE-XXXX-XXXX

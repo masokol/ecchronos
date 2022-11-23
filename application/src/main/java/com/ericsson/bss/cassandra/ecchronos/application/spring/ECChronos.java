@@ -84,7 +84,6 @@ public class ECChronos implements Closeable
                 .withReplicationState(replicationState)
                 .withHostStates(myECChronosInternals.getHostStates())
                 .withRepairHistoryProvider(repairHistoryProvider)
-                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .build();
 
         myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()

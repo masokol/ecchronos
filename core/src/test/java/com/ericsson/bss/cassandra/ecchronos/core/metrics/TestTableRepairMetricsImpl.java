@@ -33,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableRepairMetricsImpl
@@ -84,7 +82,7 @@ public class TestTableRepairMetricsImpl
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
 
-        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
+        myTableRepairMetricsImpl.repairedRatio(tableReference, 1.0);
         Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
@@ -97,7 +95,7 @@ public class TestTableRepairMetricsImpl
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
 
-        myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
+        myTableRepairMetricsImpl.repairedRatio(tableReference, 0.5);
 
         Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
@@ -112,8 +110,8 @@ public class TestTableRepairMetricsImpl
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
 
-        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
+        myTableRepairMetricsImpl.repairedRatio(tableReference, 1.0);
+        myTableRepairMetricsImpl.repairedRatio(tableReference2, 1.0);
 
         Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
@@ -134,8 +132,8 @@ public class TestTableRepairMetricsImpl
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
 
-        myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
-        myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
+        myTableRepairMetricsImpl.repairedRatio(tableReference, 0.5);
+        myTableRepairMetricsImpl.repairedRatio(tableReference2, 0.5);
 
         Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)

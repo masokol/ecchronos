@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.RepairMetricSupplier;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -63,6 +64,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final TableStorageStates myTableStorageStates;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final RepairHistory myRepairHistory;
+    private final RepairMetricSupplier myRepairMetricSupplier;
 
     private RepairSchedulerImpl(final Builder builder)
     {
@@ -76,11 +78,13 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myTableStorageStates = builder.myTableStorageStates;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory, "Repair history must be set");
+        myRepairMetricSupplier = new RepairMetricSupplier(myTableRepairMetrics);
     }
 
     @Override
     public void close()
     {
+        myRepairMetricSupplier.close();
         myExecutor.shutdown();
         try
         {
@@ -168,6 +172,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         TableRepairJob job = getRepairJob(tableReference, repairConfiguration);
         myScheduledJobs.put(tableReference, job);
         myScheduleManager.schedule(job);
+        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, null);
+        myRepairMetricSupplier.register(tableReference, repairState);
     }
 
     private void handleTableConfigurationRemoved(final TableReference tableReference)
@@ -178,6 +184,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             {
                 ScheduledJob job = myScheduledJobs.remove(tableReference);
                 descheduleTableJob(job);
+                myRepairMetricSupplier.unregister(tableReference);
             }
             catch (Exception e)
             {

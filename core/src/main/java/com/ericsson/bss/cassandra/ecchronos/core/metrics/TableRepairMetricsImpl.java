@@ -79,13 +79,11 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @Override
-    public void repairState(final TableReference tableReference,
-                            final int repairedRanges,
-                            final int notRepairedRanges)
+    public void repairedRatio(final TableReference tableReference, final double repairedRatio)
     {
-        createOrGetTableGauges(tableReference).repairRatio(repairedRanges, notRepairedRanges);
+        createOrGetTableGauges(tableReference).repairedRatio(repairedRatio);
         Gauge.builder(myRepairedRatioMetricName, myTableGauges,
-                        (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
+                        (tableGauges) -> tableGauges.get(tableReference).getRepairedRatio())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
     }
@@ -97,7 +95,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         {
             return Optional.empty();
         }
-        return Optional.ofNullable(myTableGauges.get(tableReference).getRepairRatio());
+        return Optional.ofNullable(myTableGauges.get(tableReference).getRepairedRatio());
     }
 
     @Override

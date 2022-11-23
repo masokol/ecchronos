@@ -61,9 +61,9 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     }
 
     @Override
-    public void repairState(final TableReference tableReference, final int repairedRanges, final int notRepairedRanges)
+    public void repairedRatio(final TableReference tableReference, final double repairedRatio)
     {
-        myDelegateTableRepairMetrics.repairState(tableReference, repairedRanges, notRepairedRanges);
+        myDelegateTableRepairMetrics.repairedRatio(tableReference, repairedRatio);
     }
 
     @Override

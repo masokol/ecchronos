@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -44,7 +43,6 @@ public class RepairStateImpl implements RepairState
     private final RepairConfiguration myRepairConfiguration;
     private final VnodeRepairStateFactory myVnodeRepairStateFactory;
     private final HostStates myHostStates;
-    private final TableRepairMetrics myTableRepairMetrics;
     private final ReplicaRepairGroupFactory myReplicaRepairGroupFactory;
     private final PostUpdateHook myPostUpdateHook;
 
@@ -52,7 +50,6 @@ public class RepairStateImpl implements RepairState
                            final RepairConfiguration repairConfiguration,
                            final VnodeRepairStateFactory vnodeRepairStateFactory,
                            final HostStates hostStates,
-                           final TableRepairMetrics tableRepairMetrics,
                            final ReplicaRepairGroupFactory replicaRepairGroupFactory,
                            final PostUpdateHook postUpdateHook)
     {
@@ -60,7 +57,6 @@ public class RepairStateImpl implements RepairState
         myRepairConfiguration = repairConfiguration;
         myVnodeRepairStateFactory = vnodeRepairStateFactory;
         myHostStates = hostStates;
-        myTableRepairMetrics = tableRepairMetrics;
         myReplicaRepairGroupFactory = replicaRepairGroupFactory;
         myPostUpdateHook = postUpdateHook;
 
@@ -79,20 +75,6 @@ public class RepairStateImpl implements RepairState
             RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
             if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
             {
-                myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
-
-                int nonRepairedRanges
-                        = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
-                        .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot, System.currentTimeMillis()))
-                        .count();
-
-                int repairedRanges
-                        = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
-                        - nonRepairedRanges;
-                myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
-                myTableRepairMetrics.remainingRepairTime(myTableReference,
-                        newRepairStateSnapshot.getRemainingRepairTime(System.currentTimeMillis(),
-                        myRepairConfiguration.getRepairIntervalInMs()));
                 LOG.trace("Table {} switched to repair state {}", myTableReference, newRepairStateSnapshot);
             }
         }
@@ -100,7 +82,61 @@ public class RepairStateImpl implements RepairState
         {
             LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
         }
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        if (myPostUpdateHook != null)
+        {
+            myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        }
+    }
+
+    @Override
+    public final void updateNow()
+    {
+        RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
+        RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
+        myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot);
+    }
+
+    public final double getRepairedRatio()
+    {
+        RepairStateSnapshot repairStateSnapshot = myRepairStateSnapshot.get();
+        if (repairStateSnapshot == null)
+        {
+            return 1.0;
+        }
+        int nonRepairedRanges
+                = (int) repairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
+                .filter(v -> vnodeIsRepairable(v, repairStateSnapshot, System.currentTimeMillis()))
+                .count();
+        int repairedRanges
+                = repairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
+                - nonRepairedRanges;
+        int allRanges = repairedRanges + nonRepairedRanges;
+        if (allRanges > 0)
+        {
+            return (double) repairedRanges / allRanges;
+        }
+        return 1.0;
+    }
+
+    public final long getRemainingRepairTime()
+    {
+        RepairStateSnapshot repairStateSnapshot = myRepairStateSnapshot.get();
+        if (repairStateSnapshot == null)
+        {
+            return 0;
+        }
+        return repairStateSnapshot.getRemainingRepairTime(System.currentTimeMillis(),
+                myRepairConfiguration.getRepairIntervalInMs());
+    }
+
+    public final long getLastRepairedAt()
+    {
+        RepairStateSnapshot repairStateSnapshot = myRepairStateSnapshot.get();
+        if (repairStateSnapshot == null)
+        {
+            return 0;
+        }
+        return repairStateSnapshot.lastCompletedAt();
     }
 
     /**

@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.PostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
@@ -37,10 +36,6 @@ public class RepairStateFactoryService implements RepairStateFactory
             cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile HostStates myHostStates;
 
-    @Reference(service = TableRepairMetrics.class,
-            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile TableRepairMetrics myTableRepairMetrics;
-
     @Reference(service = RepairHistoryProvider.class,
             cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairHistoryProvider myRepairHistoryProvider;
@@ -58,7 +53,6 @@ public class RepairStateFactoryService implements RepairStateFactory
                 .withReplicationState(myReplicationState)
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(myRepairHistoryProvider)
-                .withTableRepairMetrics(myTableRepairMetrics)
                 .build();
     }
 

@@ -27,9 +27,33 @@ public interface RepairState
     void update();
 
     /**
+     * Update the repair state for the table ignoring the interval.
+     */
+    void updateNow();
+
+    /**
      * Get an immutable copy of the current repair state.
      *
      * @return The immutable copy.
      */
     RepairStateSnapshot getSnapshot();
+
+    /**
+     * Get repaired ratio for the repair state.
+     *
+     * @return Repaired ratio, a value between 0 and 1.
+     */
+    double getRepairedRatio();
+
+    /**
+     * Get remaining repair time for the repair state.
+     * @return The estimated remaining repair time in milliseconds.
+     */
+    long getRemainingRepairTime();
+
+    /**
+     * Get last repaired at for the repair state.
+     * @return The last repaired at time in milliseconds.
+     */
+    long getLastRepairedAt();
 }

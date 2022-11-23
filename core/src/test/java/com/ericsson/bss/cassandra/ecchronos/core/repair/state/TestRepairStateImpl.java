@@ -58,9 +58,6 @@ public class TestRepairStateImpl
     private HostStates mockHostStates;
 
     @Mock
-    private TableRepairMetrics mockTableRepairMetrics;
-
-    @Mock
     private ReplicaRepairGroupFactory mockReplicaRepairGroupFactory;
 
     @Mock
@@ -92,17 +89,16 @@ public class TestRepairStateImpl
         when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
-                mockVnodeRepairStateFactory, mockHostStates,
-                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+                mockVnodeRepairStateFactory, mockHostStates, mockReplicaRepairGroupFactory, mockPostUpdateHook);
 
         RepairStateSnapshot repairStateSnapshot = repairState.getSnapshot();
 
         assertThat(repairGroupCaptor.getValue()).isEmpty();
         assertRepairStateSnapshot(repairStateSnapshot, expectedAtLeastRepairedAt, Lists.emptyList(), vnodeRepairStates);
 
-        verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
-        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
+        assertThat(repairState.getRepairedRatio()).isEqualTo(1.0);
+        assertThat(repairState.getLastRepairedAt()).isEqualTo(repairStateSnapshot.lastCompletedAt());
+        assertThat(repairState.getRemainingRepairTime()).isEqualTo(0L);
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -129,7 +125,7 @@ public class TestRepairStateImpl
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
                 mockVnodeRepairStateFactory, mockHostStates,
-                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+                mockReplicaRepairGroupFactory, mockPostUpdateHook);
 
         RepairStateSnapshot repairStateSnapshot = repairState.getSnapshot();
 
@@ -141,9 +137,9 @@ public class TestRepairStateImpl
         assertVnodeRepairStateRepairedBefore(vnodeRepairState, capturedVnodeRepairState, System.currentTimeMillis() - repairIntervalInMs);
         assertRepairStateSnapshot(repairStateSnapshot, expectedAtLeastRepairedAt, Collections.singletonList(mockReplicaRepairGroup), vnodeRepairStates);
 
-        verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(1));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
-        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
+        assertThat(repairState.getRepairedRatio()).isEqualTo(0.5);
+        assertThat(repairState.getLastRepairedAt()).isEqualTo(repairStateSnapshot.lastCompletedAt());
+        assertThat(repairState.getRemainingRepairTime()).isEqualTo(0L);
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -166,7 +162,7 @@ public class TestRepairStateImpl
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
                 mockVnodeRepairStateFactory, mockHostStates,
-                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+                mockReplicaRepairGroupFactory, mockPostUpdateHook);
 
         RepairStateSnapshot repairStateSnapshot = repairState.getSnapshot();
 
@@ -175,10 +171,9 @@ public class TestRepairStateImpl
 
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
 
-        verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(expectedRepairedAt));
-        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
-        reset(mockTableRepairMetrics);
+        assertThat(repairState.getRepairedRatio()).isEqualTo(1.0);
+        assertThat(repairState.getLastRepairedAt()).isEqualTo(expectedRepairedAt);
+        assertThat(repairState.getRemainingRepairTime()).isEqualTo(0L);
 
         // Perform update
         when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), eq(repairStateSnapshot))).thenReturn(vnodeRepairStates);
@@ -186,7 +181,6 @@ public class TestRepairStateImpl
 
         RepairStateSnapshot updatedRepairStateSnapshot = repairState.getSnapshot();
         assertThat(updatedRepairStateSnapshot).isSameAs(repairStateSnapshot);
-        verifyNoMoreInteractions(mockTableRepairMetrics);
         verify(mockPostUpdateHook, times(2)).postUpdate(updatedRepairStateSnapshot);
     }
 
@@ -227,7 +221,7 @@ public class TestRepairStateImpl
         when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
         RepairStateImpl repairState = new RepairStateImpl(tableReference, repairConfiguration,
                 mockVnodeRepairStateFactory, mockHostStates,
-                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+                mockReplicaRepairGroupFactory, mockPostUpdateHook);
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9000L)).isFalse();
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9500L)).isFalse();
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 10000L)).isTrue();

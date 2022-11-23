@@ -15,14 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public final class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
-    private final TableRepairMetrics myTableRepairMetrics;
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
     private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
@@ -30,7 +28,6 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
     private RepairStateFactoryImpl(final Builder builder)
     {
         myHostStates = builder.myHostStates;
-        myTableRepairMetrics = builder.myTableRepairMetrics;
 
         myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
                 builder.myRepairHistoryProvider, false);
@@ -52,7 +49,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         return new RepairStateImpl(tableReference, repairConfiguration, vnodeRepairStateFactory, myHostStates,
-                myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
+                replicaRepairGroupFactory, postUpdateHook);
     }
 
     public static Builder builder()
@@ -65,7 +62,6 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         private ReplicationState myReplicationState;
         private HostStates myHostStates;
         private RepairHistoryProvider myRepairHistoryProvider;
-        private TableRepairMetrics myTableRepairMetrics;
 
         /**
          * Build repair state factory with replication state.
@@ -100,18 +96,6 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
         {
             myRepairHistoryProvider = repairHistoryProvider;
-            return this;
-        }
-
-        /**
-         * Build repair state factory with table repair metrics.
-         *
-         * @param tableRepairMetrics  The table repair metrics.
-         * @return Builder
-         */
-        public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
-        {
-            myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 

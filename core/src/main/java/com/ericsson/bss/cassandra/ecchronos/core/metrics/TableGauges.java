@@ -22,25 +22,16 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class TableGauges implements Closeable
 {
-    private final AtomicReference<Double> myRepairRatio = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> myRepairedRatio = new AtomicReference<>(0.0);
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
     private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
 
     /**
-     * Update repair ratio.
-     *
-     * @param repairedRanges Ranges repaired
-     * @param notRepairedRanges Ranges NOT repaired
+     * Update repaired ratio.
      */
-    void repairRatio(final int repairedRanges, final int notRepairedRanges)
+    void repairedRatio(final double repairedRatio)
     {
-        double repairRatio = 0.0;
-        int allRanges = repairedRanges + notRepairedRanges;
-        if (allRanges > 0)
-        {
-            repairRatio = (double) repairedRanges / (repairedRanges + notRepairedRanges);
-        }
-        myRepairRatio.set(repairRatio);
+        myRepairedRatio.set(repairedRatio);
     }
 
     /**
@@ -48,9 +39,9 @@ public class TableGauges implements Closeable
      *
      * @return ratio of repaired ranges
      */
-    Double getRepairRatio()
+    Double getRepairedRatio()
     {
-        return myRepairRatio.get();
+        return myRepairedRatio.get();
     }
 
     /**

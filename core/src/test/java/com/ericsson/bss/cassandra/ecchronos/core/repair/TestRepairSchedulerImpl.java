@@ -88,7 +88,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), eq(null));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -110,8 +111,10 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), eq(null));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), eq(null));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -131,7 +134,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), eq(null));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -160,7 +164,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), eq(null));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -168,7 +173,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), eq(null));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, updatedRepairConfiguration);
 
@@ -190,7 +196,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any(AlarmPostUpdateHook.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), eq(null));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 

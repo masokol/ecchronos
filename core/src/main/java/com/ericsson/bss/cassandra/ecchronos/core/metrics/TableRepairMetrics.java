@@ -27,10 +27,9 @@ public interface TableRepairMetrics
      * Report number of repaired/not repaired ranges for the provided table.
      *
      * @param tableReference The table
-     * @param repairedRanges The number of repaired ranges
-     * @param notRepairedRanges The number of not repaired ranges
+     * @param repairedRatio The ratio of repaired ranges vs total ranges
      */
-    void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges);
+    void repairedRatio(TableReference tableReference, double repairedRatio);
 
     /**
      * Report the time the table was last repaired.

@@ -55,36 +55,30 @@ public class TestTableGauges
     @Test
     public void testUpdateRepairRatioAllRepaired()
     {
-        int expectedRepaired = 1;
-        int expectedNotRepaired = 0;
-        double expectedRatio = 1;
+        double expectedRatio = 1.0;
 
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
+        myTableGauges.repairedRatio(expectedRatio);
 
-        assertThat(myTableGauges.getRepairRatio()).isEqualTo(expectedRatio);
+        assertThat(myTableGauges.getRepairedRatio()).isEqualTo(expectedRatio);
     }
 
     @Test
     public void testUpdateRepairRatioHalfRepaired()
     {
-        int expectedRepaired = 1;
-        int expectedNotRepaired = 1;
         double expectedRatio = 0.5;
 
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
+        myTableGauges.repairedRatio(expectedRatio);
 
-        assertThat(myTableGauges.getRepairRatio()).isEqualTo(expectedRatio);
+        assertThat(myTableGauges.getRepairedRatio()).isEqualTo(expectedRatio);
     }
 
     @Test
     public void testUpdateRepairRatioNothingRepaired()
     {
-        int expectedRepaired = 0;
-        int expectedNotRepaired = 1;
-        double expectedRatio = 0;
+        double expectedRatio = 0.0;
 
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
+        myTableGauges.repairedRatio(expectedRatio);
 
-        assertThat(myTableGauges.getRepairRatio()).isEqualTo(expectedRatio);
+        assertThat(myTableGauges.getRepairedRatio()).isEqualTo(expectedRatio);
     }
 }

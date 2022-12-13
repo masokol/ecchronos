@@ -1,0 +1,97 @@
+description: A workload using key value in a messaging fashion, records that has been read are deleted.
+
+scenarios:
+  default:
+    schema: run driver=cql tags==phase:schema threads==1 cycles==UNDEF
+    rampup: run driver=cql tags==phase:rampup cycles===<<rampup-cycles,1000000>> threads=auto
+    main: run driver=cql tags==phase:main cycles===<<main-cycles,1000000>> threads=auto cyclerate=1000,1.5
+  long-running:
+    schema: run driver=cql tags==phase:schema threads==1 cycles==UNDEF
+    rampup: run driver=cql tags==phase:rampup cycles===<<rampup-cycles,1000000>> threads=auto
+    main: run driver=cql tags==phase:main cycles===<<main-cycles,100000000>> threads=auto cyclerate=1000,1.5
+
+bindings:
+  # For ramp-up
+  seq_key: Mod(<<keycount:1000000000>>); ToString() -> String
+  seq_id: Hash(); Mod(<<idcount:1000000000>>); ToString() -> String
+  seq_value: ByteBufferSizedHashed(<<valuecount:10000>>);
+  # For reads, writes and deletes
+  rw_key: <<keydist:Uniform(0,1000000000)->int>>; ToString() -> String
+  rw_id: Hash(); <<iddist:Uniform(0,1000000000)->int>>; ToString() -> String
+  rw_value: ByteBufferSizedHashed(<<valuedist:Uniform(0,10000)>>);
+
+blocks:
+  - name: schema
+    tags:
+      phase: schema
+    params:
+      prepared: false
+    statements:
+    - create-keyspace: |
+        create keyspace if not exists <<keyspace:benchkeyspace>>
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '<<rf:3>>'}
+        AND durable_writes = true;
+      tags:
+         name: create-keyspace
+    - create-table: |
+        create table if not exists <<keyspace:benchkeyspace>>.<<table:messaging>> (
+        key text,
+        id text,
+        value blob,
+        PRIMARY KEY(key, id))
+        WITH CLUSTERING ORDER BY (id ASC);
+      tags:
+        name: create-table
+  - name: rampup
+    tags:
+      phase: rampup
+    params:
+      cl: <<write_cl:LOCAL_QUORUM>>
+    statements:
+      - rampup-insert: |
+          insert into <<keyspace:benchkeyspace>>.<<table:messaging>>
+          (key, id, value)
+          values ({seq_key},{seq_id},{seq_value});
+        tags:
+           name: rampup-insert
+  - name: verify
+    tags:
+      phase: verify
+      type: read
+    params:
+      cl: <<read_cl:LOCAL_QUORUM>>
+    statements:
+      - verify-select: |
+          select * from <<keyspace:benchkeyspace>>.<<table:messaging>> where key={seq_key} and id={seq_id};
+        verify-fields: key->seq_key, id->seq_id, value->seq_value
+        tags:
+           name: verify
+  - name: main-read-delete
+    tags:
+      phase: main
+      type: read-delete
+    params:
+      ratio: 2
+      cl: <<read_cl:LOCAL_QUORUM>>
+    statements:
+      - main-select: |
+         select * from <<keyspace:benchkeyspace>>.<<table:messaging>> where key={rw_key} and id={rw_id};
+        tags:
+          name: main-select
+      - main-delete: |
+          delete from <<keyspace:benchkeyspace>>.<<table:messaging>> where key={rw_key} and id={rw_id};
+        tags:
+          name: main-delete
+  - name: main-write
+    tags:
+      phase: main
+      type: write
+    params:
+      ratio: 1
+      cl: <<write_cl:LOCAL_QUORUM>>
+    statements:
+      - main-insert: |
+          insert into <<keyspace:benchkeyspace>>.<<table:messaging>>
+          (key, id, value) values ({rw_key}, {rw_id}, {rw_value});
+        tags:
+           name: main-insert

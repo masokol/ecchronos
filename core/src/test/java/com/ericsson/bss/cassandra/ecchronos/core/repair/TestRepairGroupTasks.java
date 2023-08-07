@@ -278,6 +278,12 @@ public class TestRepairGroupTasks
         }
 
         @Override
+        public void forceFailAllIncrementalRepairSessions()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void removeStorageServiceListener(NotificationListener listener)
         {
             assertThat(notificationListener.compareAndSet(listener, null)).isTrue();

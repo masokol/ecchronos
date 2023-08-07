@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class VnodeRepairTask extends RepairTask
@@ -85,6 +87,20 @@ public class VnodeRepairTask extends RepairTask
         }
         myRepairSessions.values().forEach(rs -> rs.finish(repairStatus));
         myRepairSessions.clear();
+    }
+
+    @Override
+    protected final void preventHanging(final CountDownLatch countDownLatch, final JmxProxyFactory jmxProxyFactory)
+    {
+        try (JmxProxy proxy = jmxProxyFactory.connect())
+        {
+            proxy.forceTerminateAllRepairSessions();
+        }
+        catch (IOException e)
+        {
+            LOG.error("Unable to prevent hanging vnode repair task: {}", this, e);
+        }
+        countDownLatch.countDown();
     }
 
     @Override

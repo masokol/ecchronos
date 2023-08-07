@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
@@ -23,8 +24,10 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class IncrementalRepairTask extends RepairTask
 {
@@ -54,6 +57,20 @@ public class IncrementalRepairTask extends RepairTask
         {
             LOG.warn("Unable to repair '{}', affected ranges: '{}'", this, getFailedRanges());
         }
+    }
+
+    @Override
+    protected final void preventHanging(final CountDownLatch countDownLatch, final JmxProxyFactory jmxProxyFactory)
+    {
+        try (JmxProxy proxy = jmxProxyFactory.connect())
+        {
+            proxy.forceFailAllIncrementalRepairSessions();
+        }
+        catch (IOException e)
+        {
+            LOG.error("Unable to prevent hanging incremental repair task: {}", this, e);
+        }
+        countDownLatch.countDown();
     }
 
     @Override

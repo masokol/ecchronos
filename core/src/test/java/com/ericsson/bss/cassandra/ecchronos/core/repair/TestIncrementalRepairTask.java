@@ -173,4 +173,34 @@ public class TestIncrementalRepairTask
 
         verify(myTableRepairMetrics).repairSession(eq(myTableReference), anyLong(), any(TimeUnit.class), eq(false));
     }
+
+    @Test
+    public void testRepairFailed() throws InterruptedException
+    {
+        final IncrementalRepairTask repairTask = new IncrementalRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics);
+
+        CountDownLatch cdl = startRepair(repairTask, false, proxy);
+
+        Notification notification = new Notification("progress", "repair:1", 0, getFailedRepairMessage());
+        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.PROGRESS.ordinal(), 2, 2));
+        proxy.notify(notification);
+
+        notification = new Notification("progress", "repair:1", 2, "Repair command #1 finished with error");
+        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.PROGRESS.ordinal(), 2, 2));
+        proxy.notify(notification);
+
+        cdl.await();
+
+        assertThat(repairTask.getFailedRanges()).isEmpty();
+        assertThat(repairTask.getSuccessfulRanges()).isEmpty();
+        assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNull();
+        assertThat(proxy.myOptions.get(RepairOptions.INCREMENTAL_KEY)).isEqualTo("true");
+        assertThat(proxy.myOptions.get(RepairOptions.COLUMNFAMILIES_KEY)).isEqualTo(myTableReference.getTable());
+        assertThat(proxy.myOptions.get(RepairOptions.PRIMARY_RANGE_KEY)).isEqualTo("false");
+        assertThat(proxy.myOptions.get(RepairOptions.PARALLELISM_KEY)).isEqualTo(myRepairConfiguration.getRepairParallelism().getName());
+        assertThat(proxy.myOptions.get(RepairOptions.HOSTS_KEY)).isNull();
+
+        verify(myTableRepairMetrics).repairSession(eq(myTableReference), anyLong(), any(TimeUnit.class), eq(false));
+    }
 }

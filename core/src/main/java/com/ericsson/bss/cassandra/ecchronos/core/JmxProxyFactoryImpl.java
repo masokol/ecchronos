@@ -51,6 +51,8 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
 
     private static final String REPAIR_ASYNC_METHOD = "repairAsync";
     private static final String REPAIR_STATS_METHOD = "getRepairStats";
+    private static final String GET_INCREMENTAL_REPAIRS_METHOD = "getSessions";
+    private static final String FORCE_FAIL_INCREMENTAL_REPAIR_METHOD = "failSession";
     private static final String FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD = "forceTerminateAllRepairSessions";
     private static final String LIVE_NODES_ATTRIBUTE = "LiveNodes";
     private static final String UNREACHABLE_NODES_ATTRIBUTE = "UnreachableNodes";
@@ -196,6 +198,64 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
             {
                 LOG.error("Unable to terminate repair sessions");
+            }
+        }
+
+        /**
+         * Force fail all incremental repair sessions (not already failed or finalized).
+         */
+        @Override
+        public void forceFailAllIncrementalRepairSessions()
+        {
+            try
+            {
+                List<Map<String, String>> sessions = (List<Map<String, String>>) myMbeanServerConnection.invoke(
+                        myRepairServiceObject, GET_INCREMENTAL_REPAIRS_METHOD,
+                        new Object[]
+                                {
+                                        false, null
+                                },
+                        new String[]
+                                {
+                                        boolean.class.getName(),
+                                        String.class.getName()
+                                });
+                for (Map<String, String> session : sessions)
+                {
+                    String sessionId = session.get("SESSION_ID");
+                    if (sessionId != null && !sessionId.isEmpty())
+                    {
+                        failIncrementalRepairSession(sessionId, true);
+                    }
+                }
+            }
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            {
+                LOG.error("Unable to fail incremental repair sessions");
+            }
+        }
+
+        private void failIncrementalRepairSession(final String sessionId, final boolean force)
+        {
+            try
+            {
+                LOG.debug("Trying to fail incremental repair session with id {} force {}", sessionId, force);
+                myMbeanServerConnection.invoke(
+                        myRepairServiceObject, FORCE_FAIL_INCREMENTAL_REPAIR_METHOD,
+                        new Object[]
+                                {
+                                        sessionId, force
+                                },
+                        new String[]
+                                {
+                                        String.class.getName(),
+                                        boolean.class.getName()
+                                });
+                LOG.debug("Failed incremental repair session with id {} force {}", sessionId, force);
+            }
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            {
+                LOG.error("Unable to fail incremental repair session with sessionId: {} force: {}", sessionId, force);
             }
         }
 

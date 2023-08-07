@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -93,7 +92,7 @@ public abstract class RepairTask implements NotificationListener
         {
             onFinish(RepairStatus.FAILED);
             successful = false;
-            throw new ScheduledJobException("Unable to repair '" + this + "'", e);
+            throw new ScheduledJobException("Unable to repair '" + this + "', " + e.getMessage(), e);
         }
         finally
         {
@@ -168,7 +167,6 @@ public abstract class RepairTask implements NotificationListener
     {
         if (!myFailedRanges.isEmpty())
         {
-            proxy.forceTerminateAllRepairSessions();
             throw new ScheduledJobException("Repair has failed ranges '" + myFailedRanges + "'");
         }
     }
@@ -225,8 +223,8 @@ public abstract class RepairTask implements NotificationListener
         {
         case "progress":
             rescheduleHangPrevention();
-            String tag = (String) notification.getSource();
-            if (tag.equals("repair:" + myCommand))
+            String source = (String) notification.getSource();
+            if (source.equals("repair:" + myCommand))
             {
                 Map<String, Integer> progress = (Map<String, Integer>) notification.getUserData();
 
@@ -259,9 +257,20 @@ public abstract class RepairTask implements NotificationListener
         {
             myHangPreventFuture.cancel(false);
         }
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HANG_PREVENT_TIME_IN_MINUTES,
-                TimeUnit.MINUTES);
+        myHangPreventFuture = myExecutor.schedule(() ->
+                {
+                    preventHanging(myLatch, myJmxProxyFactory);
+                    myLastError = new ScheduledJobException("Repair session was canceled because it was hanging.");
+                },
+                HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
     }
+
+    /**
+     * Method called to prevent repairs from hanging.
+     * @param countDownLatch The latch to countdown.
+     * @param jmxProxyFactory The jmx proxy factory.
+     */
+    protected abstract void preventHanging(CountDownLatch countDownLatch, JmxProxyFactory jmxProxyFactory);
 
     /**
      * Update progress.
@@ -274,6 +283,15 @@ public abstract class RepairTask implements NotificationListener
     @VisibleForTesting
     void progress(final ProgressEventType type, final String message)
     {
+        LOG.debug("Progress, type: {} message: {}", type, message);
+        if (type == ProgressEventType.COMPLETE || message.endsWith("finished with error"))
+        {
+            if (message.endsWith("finished with error"))
+            {
+                myLastError = new ScheduledJobException("Repair failed, refer to Cassandra logs for more information.");
+            }
+            myLatch.countDown();
+        }
         if (type == ProgressEventType.PROGRESS || type == ProgressEventType.ERROR)
         {
             if (message.contains("finished") || message.contains("failed"))
@@ -297,10 +315,6 @@ public abstract class RepairTask implements NotificationListener
             {
                 LOG.warn("{} - Unknown progress message received: {}", this, message);
             }
-        }
-        if (type == ProgressEventType.COMPLETE)
-        {
-            myLatch.countDown();
         }
     }
 
@@ -360,23 +374,6 @@ public abstract class RepairTask implements NotificationListener
          * Used when sending message without progress.
          */
         NOTIFICATION
-    }
-
-    private class HangPreventingTask implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            try (JmxProxy proxy = myJmxProxyFactory.connect())
-            {
-                proxy.forceTerminateAllRepairSessions();
-            }
-            catch (IOException e)
-            {
-                LOG.error("Unable to prevent hanging repair task: {}", this, e);
-            }
-            myLatch.countDown();
-        }
     }
 
     @VisibleForTesting

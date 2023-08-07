@@ -304,6 +304,12 @@ public class TestUtils
         }
 
         @Override
+        public void forceFailAllIncrementalRepairSessions()
+        {
+            // NOOP
+        }
+
+        @Override
         public void removeStorageServiceListener(NotificationListener listener)
         {
             myListener = null;

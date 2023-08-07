@@ -73,6 +73,13 @@ public interface JmxProxy extends Closeable
     void forceTerminateAllRepairSessions();
 
     /**
+     * Force the fail of all incremental repair sessions on the local node.
+     * <p>
+     * This will not terminate repairs on other nodes but will affect other nodes running repair.
+     */
+    void forceFailAllIncrementalRepairSessions();
+
+    /**
      * Remove a listener from the storage service interface.
      *
      * @param listener

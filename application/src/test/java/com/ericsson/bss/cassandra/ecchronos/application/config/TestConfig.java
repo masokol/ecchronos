@@ -125,12 +125,12 @@ public class TestConfig
         assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./non-default-statistics"));
         assertThat(statisticsConfig.getMetricsPrefix()).isEqualTo("unittest");
 
-        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().getJmxReportingConfig().isEnabled()).isFalse();
         ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isFalse();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
         ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
         ExcludedMetric expectedFileExcludedMetric = new ExcludedMetric();
         expectedFileExcludedMetric.setMetricName(".*fileExcluded");
@@ -142,7 +142,7 @@ public class TestConfig
         assertThat(fileReportingConfig.getExcludedMetrics()).hasSize(1);
         assertThat(fileReportingConfig.getExcludedMetrics()).contains(expectedFileExcludedMetric);
 
-        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
         ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         ExcludedMetric expectedHttpExcludedMetric = new ExcludedMetric();
@@ -220,17 +220,17 @@ public class TestConfig
         assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./statistics"));
         assertThat(statisticsConfig.getMetricsPrefix()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getJmxReportingConfig().isEnabled()).isTrue();
         ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
         ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
         assertThat(fileReportingConfig.isEnabled()).isTrue();
         assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
         ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
@@ -304,17 +304,17 @@ public class TestConfig
         assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./statistics"));
         assertThat(statisticsConfig.getMetricsPrefix()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getJmxReportingConfig().isEnabled()).isTrue();
         ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
         ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
         assertThat(fileReportingConfig.isEnabled()).isTrue();
         assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
         ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
@@ -334,7 +334,7 @@ public class TestConfig
     }
 
     @Test
-    public void testStatisticsDisabledIfNoReporting() throws Exception
+    public void testStatisticsEnabledIfNoReporting() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("all_reporting_disabled.yml").getFile());
@@ -344,10 +344,10 @@ public class TestConfig
         Config config = objectMapper.readValue(file, Config.class);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
-        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.isEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().getJmxReportingConfig().isEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().getFileReportingConfig().isEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().getHttpReportingConfig().isEnabled()).isFalse();
+        assertThat(statisticsConfig.isEnabled()).isTrue();
     }
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider

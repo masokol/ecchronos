@@ -179,6 +179,7 @@ repair:
 
 statistics:
   enabled: true
+  log_threshold: 100
   ##
   ## Decides how statistics should be exposed.
   ## If all reporting is disabled, the statistics will be disabled as well.

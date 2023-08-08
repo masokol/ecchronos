@@ -53,15 +53,15 @@ public class MetricBeans
         StatisticsConfig metricConfig = config.getStatisticsConfig();
         if (metricConfig.isEnabled())
         {
-            if (metricConfig.getReportingConfigs().isJmxReportingEnabled())
+            if (metricConfig.getReportingConfigs().getJmxReportingConfig().isEnabled())
             {
                 createJmxMeterRegistry(metricConfig);
             }
-            if (metricConfig.getReportingConfigs().isFileReportingEnabled())
+            if (metricConfig.getReportingConfigs().getFileReportingConfig().isEnabled())
             {
                 createCsvMeterRegistry(metricConfig);
             }
-            if (metricConfig.getReportingConfigs().isHttpReportingEnabled())
+            if (metricConfig.getReportingConfigs().getHttpReportingConfig().isEnabled())
             {
                 createPrometheusMeterRegistry(metricConfig);
             }

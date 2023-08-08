@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.MetricsLogger;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
@@ -56,6 +57,7 @@ public class ECChronosInternals implements Closeable
     private final ReplicatedTableProviderImpl myReplicatedTableProvider;
     private final TableStorageStatesImpl myTableStorageStatesImpl;
     private final TableRepairMetricsImpl myTableRepairMetricsImpl;
+    private final MetricsLogger myMetricsLogger;
     private final TableReferenceFactory myTableReferenceFactory;
     private final JmxProxyFactory myJmxProxyFactory;
     private final CASLockFactory myLockFactory;
@@ -94,6 +96,7 @@ public class ECChronosInternals implements Closeable
                 .withReplicatedTableProvider(myReplicatedTableProvider)
                 .build();
 
+        myMetricsLogger = new MetricsLogger(meterRegistry, configuration.getStatisticsConfig().getLogThreshold());
         if (configuration.getStatisticsConfig().isEnabled())
         {
             myTableStorageStatesImpl = TableStorageStatesImpl.builder()
@@ -105,6 +108,7 @@ public class ECChronosInternals implements Closeable
                     .withTableStorageStates(myTableStorageStatesImpl)
                     .withMeterRegistry(meterRegistry)
                     .build();
+
         }
         else
         {
@@ -189,6 +193,10 @@ public class ECChronosInternals implements Closeable
         if (myTableStorageStatesImpl != null)
         {
             myTableStorageStatesImpl.close();
+        }
+        if (myMetricsLogger != null)
+        {
+            myMetricsLogger.close();
         }
 
         myLockFactory.close();

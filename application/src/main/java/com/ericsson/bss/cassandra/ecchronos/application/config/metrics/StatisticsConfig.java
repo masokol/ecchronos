@@ -20,7 +20,9 @@ import java.io.File;
 
 public class StatisticsConfig
 {
+    private static final long DEFAULT_LOG_THRESHOLD = 100L;
     private boolean myIsEnabled = true;
+    private long myLogThreshold = DEFAULT_LOG_THRESHOLD;
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
@@ -28,10 +30,19 @@ public class StatisticsConfig
     @JsonProperty("enabled")
     public final boolean isEnabled()
     {
-        boolean isAnyReportingEnabled = myReportingConfigs.isFileReportingEnabled()
-                || myReportingConfigs.isJmxReportingEnabled()
-                || myReportingConfigs.isHttpReportingEnabled();
-        return myIsEnabled && isAnyReportingEnabled;
+        return myIsEnabled;
+    }
+
+    @JsonProperty("log_threshold")
+    public final long getLogThreshold()
+    {
+        return myLogThreshold;
+    }
+
+    @JsonProperty("log_threshold")
+    public final void setLogThreshold(final long logThreshold)
+    {
+        myLogThreshold = logThreshold;
     }
 
     @JsonProperty("directory")

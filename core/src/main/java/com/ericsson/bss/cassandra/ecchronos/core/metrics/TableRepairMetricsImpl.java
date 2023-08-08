@@ -30,8 +30,9 @@ import java.util.concurrent.TimeUnit;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
-    private static final String KEYSPACE_TAG = "keyspace";
-    private static final String TABLE_TAG = "table";
+    static final String KEYSPACE_TAG = "keyspace";
+    static final String TABLE_TAG = "table";
+    static final String SUCCESSFUL_TAG = "successful";
 
     static final String REPAIRED_RATIO = "repaired.ratio";
     static final String TIME_SINCE_LAST_REPAIRED = "time.since.last.repaired";
@@ -128,11 +129,11 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         Timer.builder(REPAIR_SESSIONS)
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
                       TABLE_TAG, tableReference.getTable(),
-                      "successful", Boolean.toString(successful))
+                      SUCCESSFUL_TAG, Boolean.toString(successful))
                 .register(myMeterRegistry)
                 .record(timeTaken, timeUnit);
         Timer.builder(NODE_REPAIR_SESSIONS)
-                .tags("successful", Boolean.toString(successful))
+                .tags(SUCCESSFUL_TAG, Boolean.toString(successful))
                 .register(myMeterRegistry)
                 .record(timeTaken, timeUnit);
     }

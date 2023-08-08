@@ -57,19 +57,4 @@ public class ReportingConfigs
     {
         myHttpReportingConfig = httpReportingConfig;
     }
-
-    public final boolean isHttpReportingEnabled()
-    {
-        return myHttpReportingConfig != null && myHttpReportingConfig.isEnabled();
-    }
-
-    public final boolean isJmxReportingEnabled()
-    {
-        return myJmxReportingConfig != null && myJmxReportingConfig.isEnabled();
-    }
-
-    public final boolean isFileReportingEnabled()
-    {
-        return myFileReportingConfig != null && myFileReportingConfig.isEnabled();
-    }
 }

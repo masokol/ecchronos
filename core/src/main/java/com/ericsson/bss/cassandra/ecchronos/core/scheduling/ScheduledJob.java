@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("VisibilityModifier")
 public abstract class ScheduledJob implements Iterable<ScheduledTask>
 {
-    private static final int ONE_HOUR_IN_MILLIS = 3600000;
+    private static final int ONE_HOUR_IN_MILLIS = 1000;
     private static final long DEFAULT_BACKOFF_IN_MINUTES = 30;
 
     private final Priority myPriority;

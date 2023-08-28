@@ -18,15 +18,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateHolder;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,34 +53,31 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
-
-    private final RepairFaultReporter myFaultReporter;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
-    private final RepairStateFactory myRepairStateFactory;
     private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
     private final TableStorageStates myTableStorageStates;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final RepairHistory myRepairHistory;
     private final CassandraMetrics myCassandraMetrics;
+    private final RepairStateHolder myRepairStateHolder;
 
     private RepairSchedulerImpl(final Builder builder)
     {
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("RepairScheduler-%d").build());
-        myFaultReporter = builder.myFaultReporter;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
-        myRepairStateFactory = builder.myRepairStateFactory;
         myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.myRepairLockType;
         myTableStorageStates = builder.myTableStorageStates;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myCassandraMetrics = builder.myCassandraMetrics;
         myRepairHistory = builder.myRepairHistory;
+        myRepairStateHolder = builder.myRepairStateHolder;
     }
 
     @Override
@@ -262,15 +256,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
         else
         {
-            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
-                    myFaultReporter);
-            RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration,
-                    alarmPostUpdateHook);
             job = new TableRepairJob.Builder()
                     .withConfiguration(configuration)
                     .withJmxProxyFactory(myJmxProxyFactory)
                     .withTableReference(tableReference)
-                    .withRepairState(repairState)
+                    .withRepairStateHolder(myRepairStateHolder)
                     .withTableRepairMetrics(myTableRepairMetrics)
                     .withRepairConfiguration(repairConfiguration)
                     .withRepairLockType(myRepairLockType)
@@ -291,29 +281,16 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     public static class Builder
     {
-        private RepairFaultReporter myFaultReporter;
         private JmxProxyFactory myJmxProxyFactory;
         private TableRepairMetrics myTableRepairMetrics;
         private ScheduleManager myScheduleManager;
-        private RepairStateFactory myRepairStateFactory;
         private ReplicationState myReplicationState;
         private RepairLockType myRepairLockType;
         private TableStorageStates myTableStorageStates;
         private RepairHistory myRepairHistory;
         private CassandraMetrics myCassandraMetrics;
+        private RepairStateHolder myRepairStateHolder;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
-
-        /**
-         * RepairSchedulerImpl build with fault reporter.
-         *
-         * @param repairFaultReporter Repair fault reporter.
-         * @return Builder
-         */
-        public Builder withFaultReporter(final RepairFaultReporter repairFaultReporter)
-        {
-            myFaultReporter = repairFaultReporter;
-            return this;
-        }
 
         /**
          * RepairSchedulerImpl build with JMX proxy factory.
@@ -348,18 +325,6 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withScheduleManager(final ScheduleManager scheduleManager)
         {
             myScheduleManager = scheduleManager;
-            return this;
-        }
-
-        /**
-         * RepairSchedulerImpl build with repair state factory.
-         *
-         * @param repairStateFactory Repair state factory.
-         * @return Builder
-         */
-        public Builder withRepairStateFactory(final RepairStateFactory repairStateFactory)
-        {
-            myRepairStateFactory = repairStateFactory;
             return this;
         }
 
@@ -432,6 +397,17 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
         {
             myCassandraMetrics = cassandraMetrics;
+            return this;
+        }
+
+        /**
+         * Build with repairStateHolder.
+         * @param repairStateHolder The repair state holder.
+         * @return Builder
+         */
+        public Builder withRepairStateHolder(final RepairStateHolder repairStateHolder)
+        {
+            myRepairStateHolder = repairStateHolder;
             return this;
         }
 

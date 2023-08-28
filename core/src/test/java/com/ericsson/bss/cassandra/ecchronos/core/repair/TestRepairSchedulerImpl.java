@@ -80,12 +80,15 @@ public class TestRepairSchedulerImpl
     @Mock
     private CassandraMetrics myCassandraMetrics;
 
+    @Mock
+    private RepairStateHolder myRepairStateHolder;
+
     @Before
     public void init() throws IOException
     {
         when(myRepairState.getSnapshot()).thenReturn(myRepairStateSnapshot);
-        when(myRepairStateFactory.create(eq(TABLE_REFERENCE), any(), any())).thenReturn(myRepairState);
-        when(myRepairStateFactory.create(eq(TABLE_REFERENCE2), any(), any())).thenReturn(myRepairState);
+        when(myRepairStateFactory.create(eq(TABLE_REFERENCE), any())).thenReturn(myRepairState);
+        when(myRepairStateFactory.create(eq(TABLE_REFERENCE2), any())).thenReturn(myRepairState);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(VNODE_REPAIR_STATE)).build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
     }
@@ -99,7 +102,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -121,8 +124,8 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -142,7 +145,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -171,7 +174,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -179,7 +182,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, updatedRepairConfiguration);
 
@@ -201,7 +204,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
@@ -233,7 +236,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(TableRepairJob.class));
         verify(scheduleManager, timeout(1000)).schedule(any(IncrementalRepairJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT, incrementalRepairConfiguration);
@@ -255,7 +258,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(TableRepairJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
@@ -314,7 +317,7 @@ public class TestRepairSchedulerImpl
                 .withJmxProxyFactory(jmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(scheduleManager)
-                .withRepairStateFactory(myRepairStateFactory)
+                .withRepairStateHolder(myRepairStateHolder)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withCassandraMetrics(myCassandraMetrics)

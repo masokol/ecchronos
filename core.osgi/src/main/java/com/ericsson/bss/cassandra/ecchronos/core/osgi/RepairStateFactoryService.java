@@ -17,13 +17,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.PostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,6 +49,10 @@ public class RepairStateFactoryService implements RepairStateFactory
             cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile ReplicationState myReplicationState;
 
+    @Reference(service = RepairFaultReporter.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile RepairFaultReporter myRepairFaultReporter;
+
     private volatile RepairStateFactoryImpl myDelegateRepairStateFactory;
 
     @Activate
@@ -59,14 +63,14 @@ public class RepairStateFactoryService implements RepairStateFactory
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(myRepairHistoryProvider)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairFaultReporter(myRepairFaultReporter)
                 .build();
     }
 
     @Override
     public final RepairState create(final TableReference tableReference,
-                                    final RepairConfiguration repairConfiguration,
-                                    final PostUpdateHook postUpdateHook)
+                                    final RepairConfiguration repairConfiguration)
     {
-        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration, postUpdateHook);
+        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration);
     }
 }

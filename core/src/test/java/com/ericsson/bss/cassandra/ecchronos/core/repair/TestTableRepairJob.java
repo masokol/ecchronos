@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateHolder;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
@@ -86,7 +87,7 @@ public class TestTableRepairJob
     private KeyspaceMetadata myKeyspaceMetadata;
 
     @Mock
-    private RepairState myRepairState;
+    private RepairStateHolder myRepairStateHolder;
 
     @Mock
     private RepairStateSnapshot myRepairStateSnapshot;
@@ -111,11 +112,6 @@ public class TestTableRepairJob
     @Before
     public void startup()
     {
-        doReturn(-1L).when(myRepairStateSnapshot).lastCompletedAt();
-        doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
-
-        doNothing().when(myRepairState).update();
-
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
 
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
@@ -131,11 +127,14 @@ public class TestTableRepairJob
                 .withTargetRepairSizeInBytes(HUNDRED_MB_IN_BYTES)
                 .build();
 
+        doReturn(myRepairStateSnapshot).when(myRepairStateHolder).getSnapshot(any(), any());
+        doReturn(-1L).when(myRepairStateSnapshot).lastCompletedAt();
+
         myRepairJob = new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
-                .withRepairState(myRepairState)
+                .withRepairStateHolder(myRepairStateHolder)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
@@ -150,7 +149,7 @@ public class TestTableRepairJob
         verifyNoMoreInteractions(ignoreStubs(myJmxProxyFactory));
         verifyNoMoreInteractions(ignoreStubs(myLockFactory));
         verifyNoMoreInteractions(ignoreStubs(myKeyspaceMetadata));
-        verifyNoMoreInteractions(ignoreStubs(myRepairState));
+        verifyNoMoreInteractions(ignoreStubs(myRepairStateHolder));
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
     }
 
@@ -193,7 +192,7 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(false).when(myRepairStateSnapshot).canRepair();
-        doThrow(new OverloadedException(null, "Expected exception")).when(myRepairState).update();
+        doThrow(new OverloadedException(null, "Expected exception")).when(myRepairStateHolder).update(myTableReference, myRepairConfiguration);
 
         assertThat(myRepairJob.runnable()).isFalse();
 
@@ -205,7 +204,7 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(false).when(myRepairStateSnapshot).canRepair();
-        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update();
+        doThrow(new RuntimeException("Expected exception")).when(myRepairStateHolder).update(myTableReference, myRepairConfiguration);
 
         assertThat(myRepairJob.runnable()).isFalse();
 
@@ -223,7 +222,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairStateHolder, times(1)).update(myTableReference, myRepairConfiguration);
     }
 
     @Test
@@ -237,7 +236,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairStateHolder, times(1)).update(myTableReference, myRepairConfiguration);
     }
 
     @Test
@@ -251,7 +250,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairStateHolder, times(1)).update(myTableReference, myRepairConfiguration);
     }
 
     @Test
@@ -265,14 +264,15 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairStateHolder, times(1)).update(myTableReference, myRepairConfiguration);
     }
 
     @Test
     public void testPostExecuteUpdateThrowsException()
     {
         // mock
-        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update();
+        doThrow(new RuntimeException("Expected exception")).when(myRepairStateHolder).update(myTableReference,
+                myRepairConfiguration);
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
@@ -315,7 +315,7 @@ public class TestTableRepairJob
                 .withLastCompletedAt(1234L)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .build();
-        when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
+        when(myRepairStateHolder.getSnapshot(myTableReference, myRepairConfiguration)).thenReturn(repairStateSnapshot);
 
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
 
@@ -360,7 +360,7 @@ public class TestTableRepairJob
                 .withLastCompletedAt(1234L)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .build();
-        when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
+        when(myRepairStateHolder.getSnapshot(myTableReference, myRepairConfiguration)).thenReturn(repairStateSnapshot);
         // 100 MB target size, 1000MB in table
         when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(THOUSAND_MB_IN_BYTES);
 

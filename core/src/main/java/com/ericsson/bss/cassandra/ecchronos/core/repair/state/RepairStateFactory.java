@@ -20,6 +20,5 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public interface RepairStateFactory
 {
     RepairState create(TableReference tableReference,
-                       RepairConfiguration repairConfiguration,
-                       PostUpdateHook postUpdateHook);
+                       RepairConfiguration repairConfiguration);
 }

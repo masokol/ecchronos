@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.util.Collections;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateHolder;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
@@ -58,6 +59,7 @@ public class ECChronos implements Closeable
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
+    private final RepairStateHolder myRepairStateHolder;
 
     @SuppressWarnings({"checkstyle:ParameterNumber", "PMD.ExcessiveParameterList"})
     public ECChronos(final ApplicationContext applicationContext,
@@ -85,7 +87,10 @@ public class ECChronos implements Closeable
                 .withHostStates(myECChronosInternals.getHostStates())
                 .withRepairHistoryProvider(repairHistoryProvider)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                .withRepairFaultReporter(repairFaultReporter)
                 .build();
+
+        myRepairStateHolder = new RepairStateHolder(repairStateFactoryImpl);
 
         myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
                 .withSession(session)
@@ -95,10 +100,9 @@ public class ECChronos implements Closeable
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
-                .withFaultReporter(repairFaultReporter)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
-                .withRepairStateFactory(repairStateFactoryImpl)
+                .withRepairStateHolder(myRepairStateHolder)
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairConfig.getRepairLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())

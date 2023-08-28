@@ -18,11 +18,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 public final class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
     private final TableRepairMetrics myTableRepairMetrics;
+    private final RepairFaultReporter myRepairFaultReporter;
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
     private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
@@ -31,6 +33,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
     {
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
+        myRepairFaultReporter = builder.myRepairFaultReporter;
 
         myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
                 builder.myRepairHistoryProvider, false);
@@ -40,8 +43,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
 
     @Override
     public RepairState create(final TableReference tableReference,
-                              final RepairConfiguration repairConfiguration,
-                              final PostUpdateHook postUpdateHook)
+                              final RepairConfiguration repairConfiguration)
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
@@ -52,7 +54,8 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         return new RepairStateImpl(tableReference, repairConfiguration, vnodeRepairStateFactory, myHostStates,
-                myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
+                myTableRepairMetrics, replicaRepairGroupFactory, new AlarmPostUpdateHook(tableReference,
+                repairConfiguration, myRepairFaultReporter));
     }
 
     public static Builder builder()
@@ -66,6 +69,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         private HostStates myHostStates;
         private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
+        private RepairFaultReporter myRepairFaultReporter;
 
         /**
          * Build repair state factory with replication state.
@@ -112,6 +116,18 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
+            return this;
+        }
+
+        /**
+         * Build repair state factory with fault reporter.
+         *
+         * @param repairFaultReporter  The fault reporter.
+         * @return Builder
+         */
+        public Builder withRepairFaultReporter(final RepairFaultReporter repairFaultReporter)
+        {
+            myRepairFaultReporter = repairFaultReporter;
             return this;
         }
 

@@ -20,10 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -146,49 +144,6 @@ public class TestRepairStateImpl
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
         verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
-    }
-
-    @Test
-    public void testUpdateRepaired()
-    {
-        long expectedRepairedAt = System.currentTimeMillis();
-        long finishedAt = expectedRepairedAt + TimeUnit.SECONDS.toMillis(5);
-        long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
-
-        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
-
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt, finishedAt);
-
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
-                .build();
-
-        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(), any(long.class))).thenReturn(vnodeRepairStates);
-        when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
-
-        RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
-                mockVnodeRepairStateFactory, mockHostStates,
-                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
-
-        RepairStateSnapshot repairStateSnapshot = repairState.getSnapshot();
-
-        assertThat(repairGroupCaptor.getValue()).isEmpty();
-        assertRepairStateSnapshot(repairStateSnapshot, expectedRepairedAt, Lists.emptyList(), vnodeRepairStates);
-
-        verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
-
-        verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(expectedRepairedAt));
-        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
-        reset(mockTableRepairMetrics);
-
-        // Perform update
-        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), eq(repairStateSnapshot), any(long.class))).thenReturn(vnodeRepairStates);
-        repairState.update();
-
-        RepairStateSnapshot updatedRepairStateSnapshot = repairState.getSnapshot();
-        assertThat(updatedRepairStateSnapshot).isSameAs(repairStateSnapshot);
-        verifyNoMoreInteractions(mockTableRepairMetrics);
-        verify(mockPostUpdateHook, times(2)).postUpdate(updatedRepairStateSnapshot);
     }
 
     private void assertRepairStateSnapshot(RepairStateSnapshot repairStateSnapshot, long expectedAtLeastRepairedAt, List<ReplicaRepairGroup> replicaRepairGroups, VnodeRepairStates vnodeRepairStatesBase)

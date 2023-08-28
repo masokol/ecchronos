@@ -50,7 +50,7 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
  */
 @Component(service = RepairScheduler.class)
 @Designate(ocd = RepairSchedulerService.Configuration.class)
-public class RepairSchedulerService implements RepairScheduler
+public class RepairSchedulerService implements RepairScheduler //TODO
 {
     @Reference(service = RepairFaultReporter.class,
             cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
@@ -90,11 +90,9 @@ public class RepairSchedulerService implements RepairScheduler
     public final synchronized void activate(final Configuration configuration)
     {
         myDelegateRepairSchedulerImpl = RepairSchedulerImpl.builder()
-                .withFaultReporter(myFaultReporter)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(myScheduleManager)
-                .withRepairStateFactory(myRepairStateFactory)
                 .withRepairLockType(configuration.repairLockType())
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairPolicies(myRepairPolicies)

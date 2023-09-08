@@ -305,6 +305,12 @@ public class TableRepairJob extends ScheduledRepairJob
                 }
             }
         }
+        else
+        {
+            // If targetRepairSize is not set then set tokens per repair to 0.
+            // This means a single range.
+            tokensPerRepair = BigInteger.ZERO;
+        }
 
         return tokensPerRepair;
     }

@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -252,6 +253,43 @@ public class TestRepairGroup
             assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
             assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
         }
+    }
+
+    @Test
+    public void testGetRepairTaskWithCombinedRanges()
+    {
+        LongTokenRange range1 = new LongTokenRange(0, 1);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
+        LongTokenRange range3 = new LongTokenRange(6, 8);
+        LongTokenRange range4 = new LongTokenRange(10, 11);
+        Set<LongTokenRange> expectedTokenRanges = new LinkedHashSet(
+                ImmutableList.of(range1, range2, range3, range4)
+        );
+
+        BigInteger tokensPerRange = BigInteger.TEN;
+
+        // setup
+        DriverNode node = mockNode("DC1");
+
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range1, range2, range3, range4), System.currentTimeMillis());
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withTokensPerRepair(tokensPerRange)
+                .build(priority);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
+
+        assertThat(repairTasks).hasSize(1);
+        Iterator<RepairTask> iterator = repairTasks.iterator();
+        assertThat(iterator.hasNext()).isTrue();
+        VnodeRepairTask repairTask = (VnodeRepairTask) iterator.next();
+
+        assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
+        assertThat(repairTask.getTokenRanges()).containsExactlyElementsOf(expectedTokenRanges);
+        assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
+        assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
     }
 
     @Test

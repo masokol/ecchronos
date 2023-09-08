@@ -47,7 +47,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.collect.Sets;
@@ -548,8 +548,8 @@ public class ITSchedules extends TestBase
             {
                 LongTokenRange longTokenRange = convertTokenRange(tokenRange);
                 BigInteger tokensPerRange = longTokenRange.rangeSize().divide(BigInteger.TEN);
-                List<LongTokenRange> subRanges = new TokenSubRangeUtil(longTokenRange)
-                        .generateSubRanges(tokensPerRange);
+                List<LongTokenRange> subRanges = new ArrayList<>();
+                TokenRangeUtil.generateRanges(Collections.singletonList(longTokenRange), tokensPerRange).values().forEach(s -> subRanges.addAll(s));
 
                 for (LongTokenRange subRange : subRanges)
                 {
@@ -648,7 +648,7 @@ public class ITSchedules extends TestBase
         BigInteger tokensPerSubRange = totalRangeSize.divide(numberOfRanges);
 
         return allRanges.stream()
-                .flatMap(range -> new TokenSubRangeUtil(range).generateSubRanges(tokensPerSubRange).stream())
+                .flatMap(range -> TokenRangeUtil.generateRanges(Collections.singletonList(range), tokensPerSubRange).get(0).stream())
                 .collect(Collectors.toSet());
     }
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class RepairConfiguration
 {
     public static final double NO_UNWIND = 0.0d;
-    public static final long FULL_REPAIR_SIZE = Long.MAX_VALUE;
+    public static final long FULL_REPAIR_SIZE = 0L;
 
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_REPAIR_WARNING_TIME_IN_MS = TimeUnit.DAYS.toMillis(8);

@@ -42,7 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenRangeUtil;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Test;
@@ -57,6 +57,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -296,8 +297,9 @@ public class ITRepairInfo extends TestBase
             {
                 LongTokenRange longTokenRange = convertTokenRange(tokenRange);
                 BigInteger tokensPerRange = longTokenRange.rangeSize().divide(BigInteger.TEN);
-                List<LongTokenRange> subRanges = new TokenSubRangeUtil(longTokenRange)
-                        .generateSubRanges(tokensPerRange);
+
+                List<LongTokenRange> subRanges = new ArrayList<>();
+                TokenRangeUtil.generateRanges(Collections.singletonList(longTokenRange), tokensPerRange).values().forEach(s -> subRanges.addAll(s));
 
                 for (LongTokenRange subRange : subRanges)
                 {

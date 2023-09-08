@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenRangeUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -251,7 +251,8 @@ public class TestVnodeRepairStates
         BigInteger fullRange = range.rangeSize();
         BigInteger tokensPerSubRange = fullRange.divide(BigInteger.valueOf(subRangeCount));
 
-        List<LongTokenRange> subRanges = new TokenSubRangeUtil(range).generateSubRanges(tokensPerSubRange);
+        List<LongTokenRange> subRanges = new ArrayList<>();
+        TokenRangeUtil.generateRanges(Collections.singletonList(range), tokensPerSubRange).values().forEach(s -> subRanges.addAll(s));
 
         return subRanges.stream()
                 .map(subRange -> new VnodeRepairState(subRange, ImmutableSet.of(node), lastRepairedAt))

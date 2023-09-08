@@ -68,6 +68,8 @@ keyspaces:
 ##
 ## Specifies a target for how much data each repair session should process.
 ## This is an estimation assuming uniform data distribution among partition keys.
+## Based on this value, vnodes will be either split or combined to try to achieve the target.
+## Empty value will result in whole vnodes being repaired, independent of the data size.
 ## The value should be either a number or a number with a unit of measurement:
 ## 12  (12 B)
 ## 12k (12 KiB)

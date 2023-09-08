@@ -24,7 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenRangeUtil;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -186,17 +185,25 @@ public class RepairGroup extends ScheduledTask
         }
         else
         {
-            for (LongTokenRange range : myReplicaRepairGroup)
-            {
-                for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
-                {
-                    tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
-                            myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
-                }
-            }
+            tasks.addAll(createVnodeTasks());
         }
 
+        return tasks;
+    }
+
+    private List<RepairTask> createVnodeTasks()
+    {
+        List<RepairTask> tasks = new ArrayList<>();
+        List<LongTokenRange> ranges = new ArrayList<>();
+        myReplicaRepairGroup.iterator().forEachRemaining(ranges::add);
+        Map<Integer, Set<LongTokenRange>> processedRanges = TokenRangeUtil.generateRanges(ranges,
+                myTokensPerRepair);
+        for (Set<LongTokenRange> rangesForRepairTask: processedRanges.values())
+        {
+            tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                    myTableRepairMetrics, myRepairHistory, rangesForRepairTask,
+                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+        }
         return tasks;
     }
 
@@ -208,7 +215,7 @@ public class RepairGroup extends ScheduledTask
     public static class Builder
     {
         private List<TableRepairPolicy> repairPolicies = new ArrayList<>();
-        private BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
+        private BigInteger tokensPerRepair = BigInteger.ZERO;
         private TableReference tableReference;
         private RepairConfiguration repairConfiguration;
         private ReplicaRepairGroup replicaRepairGroup;

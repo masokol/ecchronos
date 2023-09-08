@@ -332,6 +332,9 @@ public class TestTableRepairJob
         assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
     }
 
+    /**
+     * This tests token splitting, table size > target size.
+     */
     @Test
     public void testIteratorWithTargetSize()
     {
@@ -386,6 +389,9 @@ public class TestTableRepairJob
         }
     }
 
+    /**
+     * This tests token combining, table size < target size.
+     */
     @Test
     public void testIteratorWithTargetSizeBiggerThanTableSize()
     {
@@ -422,21 +428,21 @@ public class TestTableRepairJob
         assertThat(task).isInstanceOf(RepairGroup.class);
         Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
 
-        assertThat(repairTasks).hasSize(expectedTokenRanges.size());
+        assertThat(repairTasks).hasSize(1);
 
         Iterator<RepairTask> repairTaskIterator = repairTasks.iterator();
-        for (LongTokenRange expectedRange : expectedTokenRanges)
-        {
-            assertThat(repairTaskIterator.hasNext()).isTrue();
-            VnodeRepairTask repairTask = (VnodeRepairTask) repairTaskIterator.next();
-            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
-            assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
-            assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairTaskIterator.hasNext()).isTrue();
+        VnodeRepairTask repairTask = (VnodeRepairTask) repairTaskIterator.next();
+        assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
+        assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
 
-            assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
-        }
+        assertThat(repairTask.getTokenRanges()).containsExactlyElementsOf(expectedTokenRanges);
     }
 
+    /**
+     * This tests token combining, table size = target size.
+     */
     @Test
     public void testIteratorWithTargetSizeSameAsTableSize()
     {
@@ -469,23 +475,20 @@ public class TestTableRepairJob
 
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
 
-        ScheduledTask task = iterator.next();
-        assertThat(task).isInstanceOf(RepairGroup.class);
-        Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
+        ScheduledTask repairGroup = iterator.next();
+        assertThat(repairGroup).isInstanceOf(RepairGroup.class);
+        Collection<RepairTask> repairTasks = ((RepairGroup) repairGroup).getRepairTasks();
 
-        assertThat(repairTasks).hasSize(expectedTokenRanges.size());
+        assertThat(repairTasks).hasSize(1);
 
         Iterator<RepairTask> repairTaskIterator = repairTasks.iterator();
-        for (LongTokenRange expectedRange : expectedTokenRanges)
-        {
-            assertThat(repairTaskIterator.hasNext()).isTrue();
-            VnodeRepairTask repairTask = (VnodeRepairTask) repairTaskIterator.next();
-            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
-            assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
-            assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairTaskIterator.hasNext()).isTrue();
+        VnodeRepairTask repairTask = (VnodeRepairTask) repairTaskIterator.next();
+        assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
+        assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
 
-            assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
-        }
+        assertThat(repairTask.getTokenRanges()).containsExactlyElementsOf(expectedTokenRanges);
     }
 
     @Test

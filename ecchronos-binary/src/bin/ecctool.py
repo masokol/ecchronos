@@ -130,6 +130,8 @@ def add_run_repair_subcommand(sub_parsers):
     parser_run_repair.add_argument("-t", "--table", type=str,
                                    help="Run repair for the specified table. Keyspace argument -k or --keyspace "
                                         "becomes mandatory if using this argument.", required=False)
+    parser_run_repair.add_argument("-p", "--pull_repair_from", type=str,
+                                   help="Run a pull repair, pulling will be done from the specified DC", required=False)
 
 
 def add_repair_info_subcommand(sub_parsers):
@@ -268,7 +270,7 @@ def run_repair(arguments):
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
     result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local,
-                          repair_type=arguments.repair_type)
+                          repair_type=arguments.repair_type, pull_repair_from=arguments.pull_repair_from)
     if result.is_successful():
         table_printer.print_repairs(result.data)
     else:

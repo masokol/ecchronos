@@ -48,6 +48,8 @@ public final class RepairOptions
      */
     public static final String INCREMENTAL_KEY = "incremental";
 
+    public static final String PULL_REPAIR_KEY = "pullRepair";
+
     /**
      * If the repair should be on a certain list of ranges.
      * <p>

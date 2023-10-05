@@ -59,6 +59,7 @@ public class RepairGroup extends ScheduledTask
     private final UUID myJobId;
     private BigInteger myTokensPerRepair;
     private RepairHistory myRepairHistory;
+    private boolean myIsPullRepair;
 
     public RepairGroup(final int priority, final Builder builder)
     {
@@ -91,6 +92,7 @@ public class RepairGroup extends ScheduledTask
         }
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
+        myIsPullRepair = builder.myIsPullRepair;
     }
 
     /**
@@ -191,7 +193,7 @@ public class RepairGroup extends ScheduledTask
             myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
             tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                     myTableRepairMetrics, myRepairHistory, combinedRanges,
-                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId, false));
         }
         else
         {
@@ -201,7 +203,7 @@ public class RepairGroup extends ScheduledTask
                 {
                     tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                             myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId, myIsPullRepair));
                 }
             }
         }
@@ -227,6 +229,7 @@ public class RepairGroup extends ScheduledTask
         private BigInteger myTokensPerRepair = LongTokenRange.FULL_RANGE;
         private RepairHistory myRepairHistory;
         private UUID myJobId;
+        private boolean myIsPullRepair;
 
         /**
          * Build with table reference.
@@ -357,6 +360,18 @@ public class RepairGroup extends ScheduledTask
         public Builder withJobId(final UUID jobId)
         {
             myJobId = jobId;
+            return this;
+        }
+
+        /**
+         * Build with pullRepair.
+         *
+         * @param pullRepair The pull repair.
+         * @return Builder
+         */
+        public Builder withPullRepair(final boolean pullRepair)
+        {
+            myIsPullRepair = pullRepair;
             return this;
         }
 

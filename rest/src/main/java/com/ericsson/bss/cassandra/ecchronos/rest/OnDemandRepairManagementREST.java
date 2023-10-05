@@ -52,8 +52,9 @@ public interface OnDemandRepairManagementREST
      * @param table The table
      * @param repairType The type of repair (optional)
      * @param isLocal If repair should be only run for the local node (optional)
+     * @param pullFromDC Make this a pull repair from the specified DC.
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, RepairOptions.RepairType repairType,
-            boolean isLocal);
+            boolean isLocal, String pullFromDC);
 }

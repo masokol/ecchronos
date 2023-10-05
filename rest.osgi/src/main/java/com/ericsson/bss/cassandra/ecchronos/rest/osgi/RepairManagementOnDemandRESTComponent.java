@@ -76,8 +76,8 @@ public class RepairManagementOnDemandRESTComponent implements OnDemandRepairMana
 
     @Override
     public final ResponseEntity<List<OnDemandRepair>> runRepair(final String keyspace, final String table,
-            final RepairOptions.RepairType repairType, final boolean isLocal)
+            final RepairOptions.RepairType repairType, final boolean isLocal, final String pullRepairFromDC)
     {
-        return myDelegateOnDemandRESTImpl.runRepair(keyspace, table, repairType, isLocal);
+        return myDelegateOnDemandRESTImpl.runRepair(keyspace, table, repairType, isLocal, pullRepairFromDC);
     }
 }

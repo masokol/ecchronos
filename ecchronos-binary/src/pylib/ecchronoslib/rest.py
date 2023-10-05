@@ -186,7 +186,7 @@ class V2RepairSchedulerRequest(RestRequest):
 
         return result
 
-    def post(self, keyspace=None, table=None, local=False, repair_type="vnode"):
+    def post(self, keyspace=None, table=None, local=False, repair_type="vnode", pull_repair_from=""):
         request_url = V2RepairSchedulerRequest.v2_repair_run_url
         if keyspace:
             request_url += "?keyspace=" + keyspace
@@ -202,6 +202,11 @@ class V2RepairSchedulerRequest(RestRequest):
                 request_url += "&repairType=" + repair_type
             else:
                 request_url += "?repairType=" + repair_type
+        if pull_repair_from:
+            if keyspace or local or repair_type:
+                request_url += "&pullFromDC=" + pull_repair_from
+            else:
+                request_url += "?pullFromDC=" + pull_repair_from
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])

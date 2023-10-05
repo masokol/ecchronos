@@ -121,9 +121,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final RepairOptions.RepairType repairType,
             @RequestParam(required = false)
             @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
-            final boolean isLocal)
+            final boolean isLocal,
+            @RequestParam(required = false)
+            @Parameter(description = "Run a pull repair from this DC.")
+            final String pullFromDC)
     {
-        return ResponseEntity.ok(runOnDemandRepair(keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
+        return ResponseEntity.ok(runOnDemandRepair(keyspace, table, getRepairTypeOrDefault(repairType), isLocal,
+                pullFromDC));
     }
 
     private RepairOptions.RepairType getRepairTypeOrDefault(final RepairOptions.RepairType repairType)
@@ -198,7 +202,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     private List<OnDemandRepair> runOnDemandRepair(final String keyspace, final String table,
-            final RepairOptions.RepairType repairType, final boolean isLocal)
+            final RepairOptions.RepairType repairType, final boolean isLocal, final String pullFromDC)
     {
         try
         {
@@ -214,12 +218,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
                     onDemandRepairs = runLocalOrCluster(repairType, isLocal,
-                            Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
+                            Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)), pullFromDC);
                 }
                 else
                 {
                     onDemandRepairs = runLocalOrCluster(repairType, isLocal,
-                            myTableReferenceFactory.forKeyspace(keyspace));
+                            myTableReferenceFactory.forKeyspace(keyspace), pullFromDC);
                 }
             }
             else
@@ -228,7 +232,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(repairType, isLocal, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(repairType, isLocal, myTableReferenceFactory.forCluster(),
+                        pullFromDC);
             }
             return onDemandRepairs;
         }
@@ -257,7 +262,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     private List<OnDemandRepair> runLocalOrCluster(final RepairOptions.RepairType repairType, final boolean isLocal,
-            final Set<TableReference> tables)
+            final Set<TableReference> tables, final String pullFromDC)
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -268,7 +273,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
                     onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType)));
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, pullFromDC)));
                 }
             }
             else

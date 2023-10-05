@@ -122,7 +122,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             final RepairOptions.RepairType repairType)
             throws EcChronosException
     {
-        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, repairType);
+        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, repairType, null);
         return getAllClusterWideRepairJobs().stream()
                 .filter(j -> j.getId().equals(currentJob.getId()))
                 .collect(Collectors.toList());
@@ -141,11 +141,29 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             final RepairOptions.RepairType repairType)
             throws EcChronosException
     {
-        return scheduleJob(tableReference, false, repairType);
+        return scheduleJob(tableReference, false, repairType, null);
+    }
+
+    /**
+     * Schedule job.
+     *
+     * @param tableReference
+     *            The table to schedule a job on.
+     * @param repairType The repair type for the on demand repair.
+     * @param pullRepairFromDC The DC to the pull repair from.
+     * @return RepairJobView
+     */
+    @Override
+    public OnDemandRepairJobView scheduleJob(final TableReference tableReference,
+            final RepairOptions.RepairType repairType, final String pullRepairFromDC)
+            throws EcChronosException
+    {
+        return scheduleJob(tableReference, false, repairType, pullRepairFromDC);
     }
 
     private OnDemandRepairJobView scheduleJob(final TableReference tableReference,
-                                              final boolean isClusterWide, final RepairOptions.RepairType repairType)
+                                              final boolean isClusterWide,
+            final RepairOptions.RepairType repairType, final String pullRepairFromDC)
             throws EcChronosException
     {
         synchronized (myLock)
@@ -155,7 +173,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 Optional<KeyspaceMetadata> ks = Metadata.getKeyspace(mySession, tableReference.getKeyspace());
                 if (ks.isPresent() && Metadata.getTable(ks.get(), tableReference.getTable()).isPresent())
                 {
-                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, repairType);
+                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, repairType, pullRepairFromDC);
                     myScheduledJobs.put(job.getId(), job);
                     myScheduleManager.schedule(job);
                     return job.getView();
@@ -234,7 +252,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     }
 
     private OnDemandRepairJob getRepairJob(final TableReference tableReference, final boolean isClusterWide,
-            final RepairOptions.RepairType repairType)
+            final RepairOptions.RepairType repairType, final String pullRepairFromDC)
     {
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
@@ -242,6 +260,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withReplicationState(myReplicationState)
                 .withHostId(myOnDemandStatus.getHostId())
                 .withRepairType(repairType)
+                .withPullRepair(pullRepairFromDC)
                 .build();
         if (isClusterWide)
         {

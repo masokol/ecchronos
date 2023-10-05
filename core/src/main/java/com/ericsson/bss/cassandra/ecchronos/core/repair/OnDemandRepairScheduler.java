@@ -38,6 +38,19 @@ public interface OnDemandRepairScheduler
             RepairOptions.RepairType repairType) throws EcChronosException;
 
     /**
+     * Create a repair that is slated to run once for a specified table.
+     *
+     * @param tableReference
+     *            The table to schedule a job on.
+     * @param repairType The type of the repair.
+     * @param pullRepairFromDC The DC to the pull repair from.
+     * @return A view of the scheduled job.
+     * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
+     */
+    OnDemandRepairJobView scheduleJob(TableReference tableReference,
+            RepairOptions.RepairType repairType, String pullRepairFromDC) throws EcChronosException;
+
+    /**
      * Create a repair that is slated to run once for a specified table for all replicas.
      *
      * @param tableReference

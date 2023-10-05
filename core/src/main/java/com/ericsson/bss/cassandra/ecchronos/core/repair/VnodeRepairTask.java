@@ -48,14 +48,16 @@ public class VnodeRepairTask extends RepairTask
             new ConcurrentHashMap<>();
     private final Set<LongTokenRange> myTokenRanges;
     private final Set<DriverNode> myReplicas;
+    private final boolean myIsPullRepair;
     private volatile Set<LongTokenRange> myUnknownRanges;
 
     public VnodeRepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics,
             final RepairHistory repairHistory, final Set<LongTokenRange> tokenRanges, final Set<DriverNode> replicas,
-            final UUID jobId)
+            final UUID jobId, final boolean isPullRepair)
     {
         super(jmxProxyFactory, tableReference, repairConfiguration, tableRepairMetrics);
+        myIsPullRepair = isPullRepair;
         myTokenRanges = Preconditions.checkNotNull(tokenRanges, "Token ranges must be set");
         myReplicas = Preconditions.checkNotNull(replicas, "Replicas must be set");
         for (LongTokenRange range : myTokenRanges)
@@ -111,6 +113,7 @@ public class VnodeRepairTask extends RepairTask
         options.put(RepairOptions.PRIMARY_RANGE_KEY, Boolean.toString(false));
         options.put(RepairOptions.COLUMNFAMILIES_KEY, getTableReference().getTable());
         options.put(RepairOptions.INCREMENTAL_KEY, Boolean.toString(false));
+        options.put(RepairOptions.PULL_REPAIR_KEY, Boolean.toString(myIsPullRepair));
 
         StringBuilder rangesStringBuilder = new StringBuilder();
         for (LongTokenRange range : myTokenRanges)

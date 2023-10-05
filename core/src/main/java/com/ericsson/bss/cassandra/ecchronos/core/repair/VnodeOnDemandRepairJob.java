@@ -93,6 +93,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         List<ReplicaRepairGroup> repairGroups = VnodeRepairGroupFactory.INSTANCE
                 .generateReplicaRepairGroups(vnodeRepairStates);
 
+        boolean pullRepair = getOngoingJob().isPullRepair();
         for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
         {
             Set<LongTokenRange> groupTokenRange = new HashSet<>();
@@ -108,6 +109,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                     .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                     .withRepairHistory(myRepairHistory)
                     .withJobId(getId())
+                    .withPullRepair(pullRepair)
                     .build(ScheduledJob.Priority.HIGHEST.getValue()), groupTokenRange);
         }
         return taskMap;

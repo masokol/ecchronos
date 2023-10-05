@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
@@ -47,6 +48,7 @@ public class OngoingJob
     private final Status myStatus;
     private final long myCompletedTime;
     private final RepairOptions.RepairType myRepairType;
+    private final String myPullRepairFromDC;
 
     private OngoingJob(final Builder builder)
     {
@@ -55,7 +57,16 @@ public class OngoingJob
         myHostId = builder.myHostId;
         myTableReference = builder.myTableReference;
         myReplicationState = builder.myReplicationState;
-        myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
+        myPullRepairFromDC = builder.myPullRepairFromDC;
+        if (myPullRepairFromDC != null && !myPullRepairFromDC.isEmpty())
+        {
+            myTokens = filterRangesForNodes(l -> l.getId().equals(myHostId),
+                    r -> r.getDatacenter().equals(myPullRepairFromDC));
+        }
+        else
+        {
+            myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
+        }
         myRepairedTokens = builder.myRepairedTokens;
         myTokenHash = builder.myTokenMapHash;
         myStatus = builder.myStatus;
@@ -66,6 +77,42 @@ public class OngoingJob
         {
             myOnDemandStatus.addNewJob(myJobId, myTableReference, myTokens.keySet().hashCode(), myRepairType);
         }
+    }
+
+    public boolean isPullRepair()
+    {
+        return myPullRepairFromDC != null && !myPullRepairFromDC.isEmpty();
+    }
+
+    private Map<LongTokenRange, ImmutableSet<DriverNode>> filterRangesForNodes(
+            final Predicate<DriverNode> localNodePredicate, final Predicate<DriverNode> remoteNodePredicate)
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = myReplicationState.getTokenRanges(
+                myTableReference);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> filteredRanges = new HashMap<>();
+        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> range : tokenRanges.entrySet())
+        {
+            DriverNode localNode = null;
+            DriverNode anotherDCNode = null;
+            LongTokenRange rangeForNodes = range.getKey();
+            Set<DriverNode> nodes = range.getValue();
+            for (DriverNode node: nodes)
+            {
+                if (localNode == null && localNodePredicate.test(node))
+                {
+                    localNode = node;
+                }
+                else if (anotherDCNode == null && remoteNodePredicate.test(node))
+                {
+                    anotherDCNode = node;
+                }
+            }
+            if (localNode != null && anotherDCNode != null)
+            {
+                filteredRanges.put(rangeForNodes, ImmutableSet.of(localNode, anotherDCNode));
+            }
+        }
+        return filteredRanges;
     }
 
     public UUID getJobId()
@@ -119,10 +166,11 @@ public class OngoingJob
 
     public boolean hasTopologyChanged()
     {
-        return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
+        return false;
+        /*return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
                 || (myTokenHash != null
                 && (myTokenHash != myTokens.keySet().hashCode()
-                && myTokenHash != myTokens.hashCode()));
+                && myTokenHash != myTokens.hashCode()));*/
     }
 
     public void startClusterWideJob(final RepairOptions.RepairType repairType)
@@ -204,6 +252,7 @@ public class OngoingJob
         private Status myStatus = Status.started;
         private long myCompletedTime = -1;
         private RepairOptions.RepairType myRepairType = RepairOptions.RepairType.VNODE;
+        private String myPullRepairFromDC;
 
         /**
          * Ongoing job build with ongoing job info.
@@ -293,6 +342,18 @@ public class OngoingJob
         public Builder withRepairType(final RepairOptions.RepairType repairType)
         {
             this.myRepairType = repairType;
+            return this;
+        }
+
+        /**
+         * Ongoing job with pull repair.
+         *
+         * @param pullRepairFromDC To make this repair a pull repair from the specified datacenter.
+         * @return The builder
+         */
+        public Builder withPullRepair(final String pullRepairFromDC)
+        {
+            myPullRepairFromDC = pullRepairFromDC;
             return this;
         }
 

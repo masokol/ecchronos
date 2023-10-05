@@ -85,6 +85,7 @@ public abstract class RepairTask implements NotificationListener
         onExecute();
         try (JmxProxy proxy = myJmxProxyFactory.connect())
         {
+            LOG.info("Options: {}", getOptions());
             rescheduleHangPrevention();
             repair(proxy);
             onFinish(RepairStatus.SUCCESS);

@@ -946,7 +946,7 @@ limitations under the License.
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <HOSTNAME>$HOSTNAME</HOSTNAME>
-                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <CASSANDRA_SEEDS>127.0.0.1</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap}</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.gossip_settle_min_wait_ms=100 -Dcassandra.gossip_settle_interval_ms=100 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
